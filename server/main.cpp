@@ -23,6 +23,8 @@
 #include "Rtmp/RtmpSession.h"
 #include "Shell/ShellSession.h"
 #include "Http/WebSocketSession.h"
+#include "Http/HttpClient.h"
+#include "Http/HttpRequester.h"
 #include "Rtp/RtpServer.h"
 #include "WebApi.h"
 #include "WebHook.h"
@@ -219,6 +221,38 @@ int start_main(int argc,char *argv[]) {
             cout << ex.what() << endl;
             return -1;
         }
+
+        // 版本检测
+        // 创建一个Http请求器
+        HttpRequester::Ptr requesterGet(new HttpRequester());
+        // 使用GET方式请求
+        requesterGet->setMethod("GET");
+        // 设置http请求头，我们假设设置cookie，当然你也可以设置其他http头
+        requesterGet->addHeader("Cookie", "SESSIONID=e1aa89b3-f79f-4ac6-8ae2-0cea9ae8e2d7");
+        // 开启请求，该api会返回当前主机外网ip等信息
+        requesterGet->startRequester(
+                "https://video.51620.net/getApiData.php", // url地址
+                [](const SockException &ex, // 网络相关的失败信息，如果为空就代表成功
+                   const Parser &parser) { // http回复body
+                    InfoL << "=======版本检测======";
+                    string expectedResponse = "am_23232877823";
+                    if (ex) {
+                        // 网络相关的错误
+                        WarnL << "network err:" << ex.getErrCode() << " " << ex.what();
+                    } else {
+                        // 打印http回复信息
+                        _StrPrinter printer;
+                        if (parser.content() != expectedResponse) {
+                            InfoL << "\033[1;31m版本已更新,请联系服务商获取最新版本.\033[0m" << std::endl;
+                            sleep(1);
+                            exit(1);
+                            return -1;
+                        } else {
+                            InfoL << "\033[1;31m当前是最新版本\033[0m";
+                        }
+                    }
+                });
+
 
         bool bDaemon = cmd_main.hasKey("daemon");
         LogLevel logLevel = (LogLevel) cmd_main["level"].as<int>();

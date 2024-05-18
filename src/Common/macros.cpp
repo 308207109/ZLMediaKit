@@ -39,9 +39,9 @@ namespace mediakit {
  * 否则本项目主要权利人(项目发起人、主要作者)保留声索起诉的权利。
  */
 #if !defined(ENABLE_VERSION)
-const char kServerName[] =  "ZLMediaKit-8.0(build in " __DATE__ " " __TIME__ ")";
+const char kServerName[] =  "AmCloudServer-8.0(build in " __DATE__ " " __TIME__ ")";
 #else
-const char kServerName[] = "ZLMediaKit(git hash:" COMMIT_HASH "/" COMMIT_TIME ",branch:" BRANCH_NAME ",build time:" BUILD_TIME ")";
+const char kServerName[] = "AmCloudServer(git hash:" COMMIT_HASH "/" COMMIT_TIME ",branch:" BRANCH_NAME ",build time:" BUILD_TIME ")";
 #endif
 
 }//namespace mediakit

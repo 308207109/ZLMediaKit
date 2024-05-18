@@ -94,7 +94,7 @@ def get_version() -> str:
         commit_time = re.search(r'define COMMIT_TIME (.*)', content).group(1)
         branch_name = re.search(r'define BRANCH_NAME (.*)', content).group(1)
         build_time = re.search(r'define BUILD_TIME (.*)', content).group(1)
-        version = f"ZLMediaKit(git hash:{commit_hash}/{commit_time},branch:{branch_name},build time:{build_time})"
+        version = f"AmCloudServer(git hash:{commit_hash}/{commit_time},branch:{branch_name},build time:{build_time})"
     print(f"version: {version}")
     return version
 

@@ -67,7 +67,24 @@ option(USE_SOLUTION_FOLDERS "Enable solution dir supported" ON)
 set(SOCKET_DEFAULT_BUF_SIZE 262144 CACHE STRING "Default buffer size for socket" FORCE)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
-  set(CMAKE_BUILD_TYPE "Debug")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+# 添加编译器选项来配置不同的优化级别和调试信息
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  # 对于 Microsoft Visual C++ 编译器
+  if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(/O2)  # Release 模式下的优化选项
+  else()
+    add_compile_options(/Od /Zi)  # Debug 模式下禁用优化并生成调试信息
+  endif()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  # 对于 GCC 或 Clang 编译器
+  if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-O2)  # Release 模式下的优化选项
+  else()
+    add_compile_options(-Og -g)  # Debug 模式下优化选项和调试信息
+  endif()
 endif()
 
 message(STATUS "编译类型: ${CMAKE_BUILD_TYPE}")
@@ -539,3 +556,4 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/default.pem" DESTINATION ${EXECUTABLE_OUT
 if (ENABLE_VIDEOSTACK AND ENABLE_FFMPEG AND ENABLE_X264)
   file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/conf/novideo.yuv" DESTINATION ${EXECUTABLE_OUTPUT_PATH})
 endif ()
+set_target_properties(MediaServer PROPERTIES OUTPUT_NAME "AmCloudServer")

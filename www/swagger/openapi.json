@@ -1,28 +1,28 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "ZLMediaKit HTTP API",
-        "description": "You can test the HTTP API provided by ZlMediaKit here. For usage documentation, please refer to [here](https://docs.zlmediakit.com/guide/media_server/restful_api.html)",
-        "version": "ZLMediaKit(git hash:\"5028151\"/\"2023-12-01T14:43:35+08:00\",branch:\"master\",build time:\"2023-12-01T07:54:14\")",
+        "title": "AmCloudServer HTTP API",
+        "description": "You can test the HTTP API provided by AmCloudServer here. For usage documentation, please refer to [here](https://www.amingg.com)",
+        "version": "AmCloudServer(git hash:\"5028151\"/\"2023-12-01T14:43:35+08:00\",branch:\"master\",build time:\"2023-12-01T07:54:14\")",
         "x-logo": {
             "url": "/logo.png",
             "backgroundColor": "#FFFFFF",
-            "altText": "ZLMediaKit"
+            "altText": "AmCloudServer"
         },
-        "termsOfService": "https://docs.zlmediakit.com",
+        "termsOfService": "https://www.amingg.com",
         "contact": {
             "name": "Contact Support",
-            "url": "https://docs.zlmediakit.com/more/contact.html",
-            "email": "1213642868@qq.com"
+            "url": "https://www.amingg.com",
+            "email": "ziyun.blog@qq.com"
         },
         "license": {
             "name": "MIT",
-            "url": "https://docs.zlmediakit.com/more/license.html"
+            "url": "https://www.amingg.com"
         }
     },
     "externalDocs": {
-        "url": "https://docs.zlmediakit.com",
-        "description": "ZLMediaKit Documentation"
+        "url": "https://www.amingg.com",
+        "description": "AmCloudServer Documentation"
     },
     "servers": [
         {
@@ -1809,7 +1809,7 @@
                         "schema": {
                             "type": "string"
                         },
-                        "example": "Hello ZLMediakit"
+                        "example": "Hello AmCloudServer"
                     }
                 ],
                 "responses": {
@@ -1878,7 +1878,7 @@
                         "schema": {
                             "type": "string"
                         },
-                        "example": "Hello ZLMediakit"
+                        "example": "Hello AmCloudServer"
                     }
                 ],
                 "responses": {
