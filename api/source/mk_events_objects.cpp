@@ -125,6 +125,13 @@ API_EXPORT const char* API_CALL mk_parser_get_content(const mk_parser ctx, size_
     }
     return parser->content().c_str();
 }
+API_EXPORT void API_CALL mk_parser_headers_for_each(const mk_parser ctx, on_mk_parser_header_cb cb, void *user_data){
+    assert(ctx && cb);
+    Parser *parser = (Parser *)ctx;
+    for (auto it = parser->getHeader().begin(); it != parser->getHeader().end(); ++it) {
+        cb(user_data, it->first.c_str(), it->second.c_str());
+    }
+}
 
 ///////////////////////////////////////////MediaInfo/////////////////////////////////////////////
 API_EXPORT const char* API_CALL mk_media_info_get_params(const mk_media_info ctx){
@@ -218,6 +225,13 @@ API_EXPORT mk_track API_CALL mk_media_source_get_track(const mk_media_source ctx
     return (mk_track) new Track::Ptr(std::move(tracks[index]));
 }
 
+API_EXPORT float API_CALL mk_media_source_get_track_loss(const mk_media_source ctx, const mk_track track) {
+    assert(ctx);
+    MediaSource *src = (MediaSource *)ctx;
+    // rtp推流只有一个统计器，但是可能有多个track，如果短时间多次获取间隔丢包率，第二次会获取为-1
+    return src->getLossRate((*((Track::Ptr *)track))->getTrackType());
+}
+
 API_EXPORT int API_CALL mk_media_source_broadcast_msg(const mk_media_source ctx, const char *msg, size_t len) {
     assert(ctx && msg && len);
     MediaSource *src = (MediaSource *)ctx;
@@ -240,6 +254,12 @@ API_EXPORT  int API_CALL mk_media_source_get_origin_type(const mk_media_source c
     return static_cast<int>(src->getOriginType());
 }
 
+API_EXPORT const char* API_CALL mk_media_source_get_origin_type_str(const mk_media_source ctx) {
+    assert(ctx);
+    MediaSource *src = (MediaSource *)ctx;
+    return _strdup(getOriginTypeString(src->getOriginType()).c_str());
+}
+
 API_EXPORT uint64_t API_CALL mk_media_source_get_create_stamp(const mk_media_source ctx) {
     assert(ctx);
     MediaSource *src = (MediaSource *)ctx;
@@ -252,6 +272,19 @@ API_EXPORT int API_CALL mk_media_source_is_recording(const mk_media_source ctx,i
     return src->isRecording((Recorder::type)type);
 }
 
+API_EXPORT int API_CALL mk_media_source_get_bytes_speed(const mk_media_source ctx) {
+    assert(ctx);
+    MediaSource *src = (MediaSource *)ctx;
+    return src->getBytesSpeed();
+}
+
+API_EXPORT uint64_t API_CALL mk_media_source_get_alive_second(const mk_media_source ctx) {
+    assert(ctx);
+    MediaSource *src = (MediaSource *)ctx;
+    return src->getAliveSecond();
+}
+
+
 API_EXPORT int API_CALL mk_media_source_close(const mk_media_source ctx,int force){
     assert(ctx);
     MediaSource *src = (MediaSource *)ctx;
@@ -262,11 +295,11 @@ API_EXPORT int API_CALL mk_media_source_seek_to(const mk_media_source ctx,uint32
     MediaSource *src = (MediaSource *)ctx;
     return src->seekTo(stamp);
 }
-API_EXPORT void API_CALL mk_media_source_start_send_rtp(const mk_media_source ctx, const char *dst_url, uint16_t dst_port, const char *ssrc, int is_udp, on_mk_media_source_send_rtp_result cb, void *user_data) {
-    mk_media_source_start_send_rtp2(ctx, dst_url, dst_port, ssrc, is_udp, cb, user_data, nullptr);
+API_EXPORT void API_CALL mk_media_source_start_send_rtp(const mk_media_source ctx, const char *dst_url, uint16_t dst_port, const char *ssrc, int con_type, on_mk_media_source_send_rtp_result cb, void *user_data) {
+    mk_media_source_start_send_rtp2(ctx, dst_url, dst_port, ssrc, con_type, cb, user_data, nullptr);
 }
 
-API_EXPORT void API_CALL mk_media_source_start_send_rtp2(const mk_media_source ctx, const char *dst_url, uint16_t dst_port, const char *ssrc, int is_udp, on_mk_media_source_send_rtp_result cb, void *user_data, on_user_data_free user_data_free){
+API_EXPORT void API_CALL mk_media_source_start_send_rtp2(const mk_media_source ctx, const char *dst_url, uint16_t dst_port, const char *ssrc, int con_type, on_mk_media_source_send_rtp_result cb, void *user_data, on_user_data_free user_data_free){
     assert(ctx && dst_url && ssrc);
     MediaSource *src = (MediaSource *)ctx;
 
@@ -274,7 +307,7 @@ API_EXPORT void API_CALL mk_media_source_start_send_rtp2(const mk_media_source c
     args.dst_url = dst_url;
     args.dst_port = dst_port;
     args.ssrc = ssrc;
-    args.is_udp = is_udp;
+    args.con_type = (mediakit::MediaSourceEvent::SendRtpArgs::ConType)con_type;
 
     std::shared_ptr<void> ptr(user_data, user_data_free ? user_data_free : [](void *) {});
     src->startSendRtp(args, [cb, ptr](uint16_t local_port, const SockException &ex){

@@ -15,6 +15,7 @@
 #include <atomic>
 #include <memory>
 #include <functional>
+#include "Util/mini.h"
 #include "Network/Socket.h"
 #include "Extension/Track.h"
 #include "Record/Recorder.h"
@@ -41,6 +42,7 @@ enum class MediaOriginType : uint8_t {
 std::string getOriginTypeString(MediaOriginType type);
 
 class MediaSource;
+class RtpProcess;
 class MultiMediaSourceMuxer;
 class MediaSourceEvent {
 public:
@@ -88,22 +90,35 @@ public:
     // 获取所有track相关信息
     virtual std::vector<Track::Ptr> getMediaTracks(MediaSource &sender, bool trackReady = true) const { return std::vector<Track::Ptr>(); };
     // 获取MultiMediaSourceMuxer对象
-    virtual std::shared_ptr<MultiMediaSourceMuxer> getMuxer(MediaSource &sender) { return nullptr; }
+    virtual std::shared_ptr<MultiMediaSourceMuxer> getMuxer(MediaSource &sender) const { return nullptr; }
+    // 获取RtpProcess对象
+    virtual std::shared_ptr<RtpProcess> getRtpProcess(MediaSource &sender) const { return nullptr; }
 
     class SendRtpArgs {
     public:
-        enum Type { kRtpRAW = 0, kRtpPS = 1, kRtpTS = 2 };
-        // 是否采用udp方式发送rtp
-        bool is_udp = true;
+        enum DataType {
+            kRtpES = 0, // 发送ES流
+            kRtpPS = 1, // 发送PS流
+            kRtpTS = 2 // 发送TS流
+        };
+
+        enum ConType {
+            kTcpActive = 0, // tcp主动模式，tcp客户端主动连接对方并发送rtp
+            kUdpActive = 1, // udp主动模式，主动发送数据给对方
+            kTcpPassive = 2, // tcp被动模式，tcp服务器，等待对方连接并回复rtp
+            kUdpPassive = 3 // udp被动方式，等待对方发送nat打洞包，然后回复rtp至打洞包源地址
+        };
+
         // rtp类型
-        Type type = kRtpPS;
-        //发送es流时指定是否只发送纯音频流
+        DataType data_type = kRtpPS;
+        // 连接类型
+        ConType con_type = kUdpActive;
+
+        // 发送es流时指定是否只发送纯音频流
         bool only_audio = false;
-        //tcp被动方式
-        bool passive = false;
         // rtp payload type
         uint8_t pt = 96;
-        //是否支持同ssrc多服务器发送
+        // 是否支持同ssrc多服务器发送
         bool ssrc_multi_send = false;
         // 指定rtp ssrc
         std::string ssrc;
@@ -114,16 +129,16 @@ public:
         // 发送目标主机地址，可以是ip或域名
         std::string dst_url;
 
-        //udp发送时，是否开启rr rtcp接收超时判断
+        // udp发送时，是否开启rr rtcp接收超时判断
         bool udp_rtcp_timeout = false;
-        //tcp被动发送服务器延时关闭事件，单位毫秒；设置为0时，则使用默认值5000ms
-        uint32_t tcp_passive_close_delay_ms = 0;
-        //udp 发送时，rr rtcp包接收超时时间，单位毫秒
+        // passive被动、tcp主动模式超时时间
+        uint32_t close_delay_ms = 0;
+        // udp 发送时，rr rtcp包接收超时时间，单位毫秒
         uint32_t rtcp_timeout_ms = 30 * 1000;
-        //udp 发送时，发送sr rtcp包间隔，单位毫秒
+        // udp 发送时，发送sr rtcp包间隔，单位毫秒
         uint32_t rtcp_send_interval_ms = 5 * 1000;
 
-        //发送rtp同时接收，一般用于双向语言对讲, 如果不为空，说明开启接收
+        // 发送rtp同时接收，一般用于双向语言对讲, 如果不为空，说明开启接收
         std::string recv_stream_id;
     };
 
@@ -142,6 +157,14 @@ static void getArgsValue(const MAP &allArgs, const KEY &key, TYPE &value) {
     auto val = ((MAP &)allArgs)[key];
     if (!val.empty()) {
         value = (TYPE)val;
+    }
+}
+
+template <typename KEY, typename TYPE>
+static void getArgsValue(const toolkit::mINI &allArgs, const KEY &key, TYPE &value) {
+    auto it = allArgs.find(key);
+    if (it != allArgs.end()) {
+        value = (TYPE)it->second;
     }
 }
 
@@ -278,7 +301,8 @@ public:
     bool stopSendRtp(MediaSource &sender, const std::string &ssrc) override;
     float getLossRate(MediaSource &sender, TrackType type) override;
     toolkit::EventPoller::Ptr getOwnerPoller(MediaSource &sender) override;
-    std::shared_ptr<MultiMediaSourceMuxer> getMuxer(MediaSource &sender) override;
+    std::shared_ptr<MultiMediaSourceMuxer> getMuxer(MediaSource &sender) const override;
+    std::shared_ptr<RtpProcess> getRtpProcess(MediaSource &sender) const override;
 
 private:
     std::weak_ptr<MediaSourceEvent> _listener;
@@ -395,7 +419,9 @@ public:
     // 获取所在线程
     toolkit::EventPoller::Ptr getOwnerPoller();
     // 获取MultiMediaSourceMuxer对象
-    std::shared_ptr<MultiMediaSourceMuxer> getMuxer();
+    std::shared_ptr<MultiMediaSourceMuxer> getMuxer() const;
+    // 获取RtpProcess对象
+    std::shared_ptr<RtpProcess> getRtpProcess() const;
 
     ////////////////static方法，查找或生成MediaSource////////////////
 
